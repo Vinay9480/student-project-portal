@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{% if task %}Edit Task{% else %}New Task{% endif %} — {{ project.name }}{% endblock %}
+{% block page_title %}{% if task %}Edit Task{% else %}New Task{% endif %}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb mb-3" style="display:flex;gap:.5rem;color:var(--text-muted);font-size:.85rem;">
+  <a href="{{ url_for('projects.list_projects') }}">Projects</a>
+  <span>/</span>
+  <a href="{{ url_for('projects.detail', project_id=project.id) }}">{{ project.name }}</a>
+  <span>/</span>
+  <span style="color:var(--text);font-weight:600;">{% if task %}Edit Task{% else %}Create Task{% endif %}</span>
+</nav>
+
+<div style="max-width:680px;margin:0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        {% if task %}✏️ Edit Task: {{ task.title }}{% else %}＋ Create New Task{% endif %}
+      </span>
+    </div>
+    <div class="card-body">
+      <form method="POST"
+            action="{{ url_for('tasks.edit_task', task_id=task.id) if task else url_for('tasks.create_task', project_id=project.id) }}"
+            enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label class="form-label" for="title">Task Title <span style="color:var(--danger)">*</span></label>
+          <input class="form-control" type="text" id="title" name="title" maxlength="200" required
+                 placeholder="e.g. Implement user authentication endpoint"
+                 value="{{ task.title if task else (title or '') }}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="description">Task Description</label>
+          <textarea class="form-control" id="description" name="description" rows="4"
+                    placeholder="Provide details, acceptance criteria, or technical notes...">{{ task.description if task else (description or '') }}</textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="priority">Priority</label>
+            <select class="form-control" id="priority" name="priority">
+              {% for p in priorities %}
+              <option value="{{ p }}" {% if task and task.priority == p %}selected{% elif not task and p == 'medium' %}selected{% endif %}>
+                {{ p.title() }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="status">Status</label>
+            <select class="form-control" id="status" name="status">
+              {% for s in statuses %}
+              <option value="{{ s }}" {% if task and task.status == s %}selected{% elif not task and s == 'todo' %}selected{% endif %}>
+                {{ s.replace('_',' ').title() }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="due_date">Target Due Date</label>
+            <input class="form-control" type="date" id="due_date" name="due_date"
+                   value="{{ task.due_date.isoformat() if task and task.due_date else '' }}" />
+          </div>
+
+          {% if current_user.is_admin or project.owner_id == current_user.id %}
+          <div class="form-group">
+            <label class="form-label" for="assignee_id">Assign To Member</label>
+            <select class="form-control" id="assignee_id" name="assignee_id">
+              <option value="">— Unassigned —</option>
+              {% for m in members %}
+              <option value="{{ m.id }}" {% if task and task.assignee_id == m.id %}selected{% endif %}>
+                {{ m.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="tags">Tags / Labels (comma separated)</label>
+          <input class="form-control" type="text" id="tags" name="tags"
+                 placeholder="e.g. backend, api, security, frontend"
+                 value="{{ task.tags if task and task.tags else (tags or '') }}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="attachment">Attachment File (Optional)</label>
+          <input class="form-control" type="file" id="attachment" name="attachment" />
+          <span class="text-small text-muted">Upload supporting docs, screenshots, mockups, or code.</span>
+        </div>
+
+        <div class="d-flex justify-between align-center mt-4" style="border-top:1px solid var(--border);padding-top:1rem;">
+          {% if task %}
+          <a href="{{ url_for('tasks.task_detail', task_id=task.id) }}" class="btn btn-secondary">Cancel</a>
+          {% else %}
+          <a href="{{ url_for('projects.detail', project_id=project.id) }}" class="btn btn-secondary">Cancel</a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">
+            {% if task %}Save Changes{% else %}Create Task{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

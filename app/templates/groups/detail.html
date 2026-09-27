@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }}{% endblock %}
+{% block page_title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('groups.list_groups') }}">Groups</a>
+  <span class="sep">/</span>
+  <span>{{ group.name }}</span>
+</nav>
+
+<!-- Group Hero Banner -->
+<div class="card mb-4" style="background:linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);border:1px solid var(--border);position:relative;overflow:hidden;">
+  <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);border-radius:50%;pointer-events:none;"></div>
+  
+  <div class="card-body" style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;position:relative;z-index:1;">
+    {% if group.image_url %}
+      <img src="{{ group.image_url }}" alt="{{ group.name }}"
+           style="width:84px;height:84px;border-radius:var(--radius-lg);object-fit:cover;
+                  border:2px solid var(--border);box-shadow:0 8px 16px rgba(0,0,0,0.3);" />
+    {% else %}
+      <div style="width:84px;height:84px;border-radius:var(--radius-lg);background:linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.3) 100%);
+                  color:var(--primary);font-size:2.5rem;display:flex;align-items:center;justify-content:center;
+                  flex-shrink:0;border:1px solid rgba(99,102,241,0.3);box-shadow:0 8px 16px rgba(0,0,0,0.2);">👥</div>
+    {% endif %}
+
+    <div style="flex:1;min-width:260px;">
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+        <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;margin:0;">{{ group.name }}</h2>
+        <span class="badge badge-{{ group.status }}">{{ group.status | capitalize }}</span>
+      </div>
+
+      {% if group.description %}
+        <p style="color:var(--text-muted);margin:.5rem 0 .75rem 0;font-size:.95rem;line-height:1.5;">{{ group.description }}</p>
+      {% endif %}
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;">
+        {% if group.domain %}
+          <span class="tag" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.25);">🏷 {{ group.domain }}</span>
+        {% endif %}
+        {% for tag in group.get_tech_tags_list() %}
+          <span class="tag">{{ tag }}</span>
+        {% endfor %}
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;font-size:.85rem;color:var(--text-muted);">
+        <span>👥 <strong>{{ group.accepted_member_count() }}</strong> / {{ group.max_members }} Members</span>
+        <span>👑 Leader: <a href="{{ url_for('users.profile', user_id=group.leader_id) }}" style="color:var(--primary);font-weight:600;">{{ group.leader.name }}</a></span>
+        {% if group.mentor %}
+          <span>🧑‍🏫 Mentor: <a href="{{ url_for('users.profile', user_id=group.mentor_id) }}" style="color:#10b981;font-weight:600;">{{ group.mentor.name }}</a></span>
+        {% endif %}
+        <span>📅 Created {{ group.created_at.strftime('%b %d, %Y') }}</span>
+      </div>
+    </div>
+
+    {% if is_leader %}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      <form id="disband-form" method="POST" action="{{ url_for('groups.delete_group', group_id=group.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="button" class="btn btn-danger btn-sm"
+                onclick="openConfirmModal('disband-form','Disband this group? This will permanently delete the group and linked data.')">
+          🗑 Disband Group
+        </button>
+      </form>
+    </div>
+    {% elif is_member %}
+    <form id="leave-form" method="POST" action="{{ url_for('groups.leave_group', group_id=group.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="button" class="btn btn-warning btn-sm"
+              onclick="openConfirmModal('leave-form','Are you sure you want to leave this group?')">
+        Leave Group
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2" style="gap:1.5rem;align-items:start;">
+  <!-- Members List & Management -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span class="card-title">👥 Team Members ({{ group.accepted_member_count() }}/{{ group.max_members }})</span>
+      <span class="text-small text-muted">{{ group.max_members - group.accepted_member_count() }} spot(s) remaining</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      {% for m in members %}
+      <div style="display:flex;align-items:center;gap:.9rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--border);transition:background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+        {% if m.student.avatar_url %}
+          <img src="{{ m.student.avatar_url }}" alt="{{ m.student.name }}" class="avatar" style="object-fit:cover;" />
+        {% else %}
+          <div class="avatar" style="font-weight:700;">{{ m.student.initials }}</div>
+        {% endif %}
+        
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <a href="{{ url_for('users.profile', user_id=m.student_id) }}" style="font-weight:600;font-size:.92rem;color:var(--text-main);">
+              {{ m.student.name }}
+            </a>
+            {% if m.student_id == group.leader_id %}
+              <span class="badge badge-primary" style="font-size:.7rem;padding:.15rem .45rem;">Leader</span>
+            {% endif %}
+          </div>
+          <div class="text-small text-muted" style="display:flex;align-items:center;gap:.5rem;margin-top:.2rem;">
+            <span>{{ m.student.email }}</span>
+            <span>·</span>
+            <span class="badge badge-{{ m.status }}" style="font-size:.68rem;">{{ m.status }}</span>
+          </div>
+        </div>
+
+        {% if is_leader and m.student_id != group.leader_id and m.status == 'accepted' %}
+        <div>
+          <form id="remove-{{ m.student_id }}-form" method="POST"
+                action="{{ url_for('groups.remove_member', group_id=group.id, student_id=m.student_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="button" class="btn btn-sm btn-ghost" style="color:var(--danger);font-size:.8rem;padding:.3rem .6rem;"
+                    onclick="openConfirmModal('remove-{{ m.student_id }}-form','Remove {{ m.student.name }} from the group?')">
+              Remove
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if is_leader %}
+    <!-- Invite form -->
+    <div class="card-footer" style="background:var(--bg-alt);border-top:1px solid var(--border);">
+      <div style="font-weight:600;font-size:.85rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem;">
+        <span>✉️</span> <span>Invite a Student</span>
+      </div>
+      {% if group.accepted_member_count() >= group.max_members %}
+        <p class="text-muted text-small">This group has reached maximum member capacity.</p>
+      {% elif students %}
+      <form method="POST" action="{{ url_for('groups.invite_member', group_id=group.id) }}"
+            style="display:flex;gap:.5rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <select class="form-control" name="student_id" required style="flex:1;font-size:.85rem;">
+          <option value="">— Select student to invite —</option>
+          {% for s in students %}
+          <option value="{{ s.id }}">{{ s.name }} ({{ s.email }})</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-primary btn-sm" type="submit">Send Invite</button>
+      </form>
+      {% else %}
+        <p class="text-muted text-small">No other available students to invite.</p>
+      {% endif %}
+    </div>
+
+    <!-- Transfer leadership -->
+    {% set transfer_candidates = members | selectattr('status','equalto','accepted') | selectattr('student_id','ne',group.leader_id) | list %}
+    {% if transfer_candidates %}
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);background:var(--bg-card);">
+      <div style="font-weight:600;font-size:.85rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem;">
+        <span>👑</span> <span>Transfer Leadership</span>
+      </div>
+      <form method="POST" action="{{ url_for('groups.transfer_leadership', group_id=group.id) }}"
+            style="display:flex;gap:.5rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <select class="form-control" name="new_leader_id" required style="flex:1;font-size:.85rem;">
+          <option value="">— Select new leader —</option>
+          {% for m in transfer_candidates %}
+          <option value="{{ m.student_id }}">{{ m.student.name }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-warning btn-sm" type="submit">Transfer</button>
+      </form>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Right column: Mentor Info/Request + Projects -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- Mentor Card -->
+    {% if group.mentor %}
+    <div class="card">
+      <div class="card-header"><span class="card-title">🧑‍🏫 Assigned Mentor</span></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:.9rem;">
+          {% if group.mentor.avatar_url %}
+            <img src="{{ group.mentor.avatar_url }}" alt="{{ group.mentor.name }}" class="avatar" style="width:48px;height:48px;object-fit:cover;" />
+          {% else %}
+            <div class="avatar" style="width:48px;height:48px;font-size:1.1rem;background:rgba(16,185,129,0.2);color:#34d399;font-weight:700;">{{ group.mentor.initials }}</div>
+          {% endif %}
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:1rem;">
+              <a href="{{ url_for('users.profile', user_id=group.mentor.id) }}" style="color:var(--text-main);">{{ group.mentor.name }}</a>
+            </div>
+            <div style="color:var(--text-muted);font-size:.85rem;">{{ group.mentor.email }}</div>
+            {% if group.mentor.bio %}
+              <div style="font-size:.82rem;color:var(--text-muted);margin-top:.3rem;line-height:1.4;">{{ group.mentor.bio }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% elif is_leader and not group.mentor_id %}
+    <div class="card">
+      <div class="card-header"><span class="card-title">🧑‍🏫 Request a Mentor</span></div>
+      <div class="card-body">
+        {% if pending_request %}
+          <div class="alert alert-info" style="margin-bottom:0;">
+            A mentor request sent to <strong>{{ pending_request.mentor.name }}</strong> is pending review.
+          </div>
+        {% elif mentors %}
+        <form method="POST" action="{{ url_for('mentors.send_mentor_request', group_id=group.id) }}"
+              style="display:flex;gap:.5rem;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <select class="form-control" name="mentor_id" required style="flex:1;font-size:.85rem;">
+            <option value="">— Choose a faculty mentor —</option>
+            {% for mentor in mentors %}
+            <option value="{{ mentor.id }}">{{ mentor.name }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-success btn-sm" type="submit">Send Request</button>
+        </form>
+        {% else %}
+          <p class="text-muted text-small">No mentors are currently available for requests.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Linked Projects -->
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="card-title">📁 Group Projects</span>
+        {% if current_user.is_admin or group.leader_id == current_user.id %}
+        <a href="{{ url_for('projects.create_project') }}" class="btn btn-sm btn-primary">＋ New Project</a>
+        {% endif %}
+      </div>
+      <div class="card-body" style="padding:0;">
+        {% set group_projects = group.projects.all() %}
+        {% if group_projects %}
+          {% for p in group_projects %}
+          <a href="{{ url_for('projects.detail', project_id=p.id) }}"
+             style="display:flex;align-items:center;justify-content:space-between;
+                    padding:.85rem 1.25rem;border-bottom:1px solid var(--border);
+                    color:inherit;text-decoration:none;transition:background 0.2s;"
+             onmouseover="this.style.background='var(--bg-hover)'"
+             onmouseout="this.style.background='transparent'">
+            <div>
+              <div style="font-weight:600;font-size:.95rem;color:var(--text-main);">{{ p.name }}</div>
+              <div class="text-small text-muted" style="margin-top:.2rem;">
+                <span class="badge badge-{{ p.status }}" style="font-size:.7rem;">{{ p.status }}</span>
+                <span style="margin-left:.4rem;">{{ p.tasks.count() }} task(s)</span>
+              </div>
+            </div>
+            <div style="text-align:right;min-width:90px;">
+              <div style="font-size:.8rem;font-weight:700;color:var(--primary);margin-bottom:.2rem;">{{ p.progress() }}%</div>
+              <div class="progress-wrap" style="width:80px;height:6px;">
+                <div class="progress-bar" style="width:{{ p.progress() }}%;"></div>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.9rem;">
+            No projects linked yet.
+            {% if current_user.is_admin or group.leader_id == current_user.id %}
+            <div style="margin-top:.6rem;">
+              <a href="{{ url_for('projects.create_project') }}" class="btn btn-sm btn-ghost">Create the first project</a>
+            </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

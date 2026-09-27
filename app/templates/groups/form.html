@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{% if group %}Edit Group{% else %}New Group{% endif %}{% endblock %}
+{% block page_title %}{% if group %}Edit Group{% else %}Create Group{% endif %}{% endblock %}
+
+{% block content %}
+<div style="max-width:620px;">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('groups.list_groups') }}">Groups</a>
+    <span class="sep">/</span>
+    <span>{% if group %}Edit{% else %}New{% endif %}</span>
+  </nav>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="POST"
+            action="{{ url_for('groups.create_group') }}"
+            enctype="multipart/form-data"
+            novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label class="form-label" for="name">Group Name <span class="text-danger">*</span></label>
+          <input class="form-control" type="text" id="name" name="name" maxlength="120" required
+                 value="{{ name or '' }}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="description">Description</label>
+          <textarea class="form-control" id="description" name="description" rows="3">{{ description or '' }}</textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="max_members">Max Members <span class="text-danger">*</span></label>
+            <input class="form-control" type="number" id="max_members" name="max_members"
+                   min="1" max="20" value="{{ max_members or 4 }}" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="domain">Domain</label>
+            <select class="form-control" id="domain" name="domain">
+              <option value="">— Select domain —</option>
+              {% for d in domains %}
+              <option value="{{ d }}" {% if domain == d %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tech Stack Tags</label>
+          <div id="tag-display" style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.4rem;min-height:1.5rem;"></div>
+          <input type="text" id="tech-tag-input" class="form-control"
+                 placeholder="Type a tag and press Enter" />
+          <input type="hidden" id="tech_tags" name="tech_tags" value="{{ tech_tags or '' }}" />
+          <span class="form-text">Press Enter or comma to add a tag.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="group-image-input">Group Image (optional)</label>
+          <input class="form-control" type="file" id="group-image-input" name="image"
+                 accept="image/*" />
+          <img id="group-image-preview" src="" alt="Preview"
+               style="display:none;margin-top:.5rem;height:80px;border-radius:var(--radius);
+                      border:1px solid var(--border);" />
+          <span class="form-text">Max 2 MB. png, jpg, gif, webp.</span>
+        </div>
+
+        <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+          <a href="{{ url_for('groups.list_groups') }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create Group</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

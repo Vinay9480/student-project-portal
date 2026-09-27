@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block topbar_actions %}
+  {% if unread_count > 0 %}
+  <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <button class="btn btn-sm btn-secondary" type="submit">Mark all read</button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% macro notif_icon(type) %}
+  {% if type == 'group_invite' %}notif-icon-invite{% elif type == 'invite_response' %}notif-icon-response
+  {% elif type == 'member_left' %}notif-icon-left{% elif type in ('mentor_request','mentor_decision') %}notif-icon-mentor
+  {% else %}notif-icon-disbanded{% endif %}
+{% endmacro %}
+
+{% macro notif_emoji(type) %}
+  {% if type == 'group_invite' %}📨{% elif type == 'invite_response' %}✅
+  {% elif type == 'member_left' %}👋{% elif type == 'mentor_request' %}📝
+  {% elif type == 'mentor_decision' %}🧑‍🏫{% else %}💔{% endif %}
+{% endmacro %}
+
+{% macro notif_text(n) %}
+{% set p = n.get_payload() %}
+{% if n.type == 'group_invite' %}
+  <strong>{{ p.get('leader_name','Someone') }}</strong> invited you to join
+  <strong>{{ p.get('group_name','a group') }}</strong>.
+  {% if p.get('invite_id') %}
+    <div style="margin-top:.5rem;display:flex;gap:.5rem;">
+      <form method="POST" action="{{ url_for('groups.accept_invite', invite_id=p['invite_id']) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button class="btn btn-success btn-sm" type="submit">Accept</button>
+      </form>
+      <form method="POST" action="{{ url_for('groups.decline_invite', invite_id=p['invite_id']) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button class="btn btn-danger btn-sm" type="submit">Decline</button>
+      </form>
+    </div>
+  {% endif %}
+{% elif n.type == 'invite_response' %}
+  <strong>{{ p.get('invitee_name','A student') }}</strong>
+  {% if p.get('accepted') %}<span style="color:var(--success);">accepted</span>
+  {% else %}<span style="color:var(--danger);">declined</span>{% endif %}
+  your invite to <strong>{{ p.get('group_name','your group') }}</strong>.
+{% elif n.type == 'member_left' %}
+  <strong>{{ p.get('member_name','A member') }}</strong>
+  left or was removed from <strong>{{ p.get('group_name','your group') }}</strong>.
+{% elif n.type == 'mentor_request' %}
+  Group <strong>{{ p.get('group_name') }}</strong> (led by {{ p.get('leader_name') }}) is requesting you as mentor.
+  Domain: {{ p.get('domain','—') }}. Members: {{ p.get('members', [])|join(', ') }}.
+  {% if p.get('request_id') %}
+    <div style="margin-top:.5rem;display:flex;gap:.5rem;">
+      <form method="POST" action="{{ url_for('mentors.accept_mentor_request', request_id=p['request_id']) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button class="btn btn-success btn-sm" type="submit">Accept</button>
+      </form>
+      <form method="POST" action="{{ url_for('mentors.reject_mentor_request', request_id=p['request_id']) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+      </form>
+    </div>
+  {% endif %}
+{% elif n.type == 'mentor_decision' %}
+  Mentor <strong>{{ p.get('mentor_name') }}</strong>
+  {% if p.get('accepted') %}<span style="color:var(--success);">accepted</span>
+  {% else %}<span style="color:var(--danger);">rejected</span>{% endif %}
+  the mentor request for <strong>{{ p.get('group_name') }}</strong>.
+{% elif n.type == 'group_disbanded' %}
+  Group <strong>{{ p.get('group_name') }}</strong> was disbanded by {{ p.get('disbanded_by') }}.
+{% endif %}
+{% endmacro %}
+
+<div class="card">
+  {% if notifications %}
+    {% for n in notifications %}
+    <div class="notif-item {% if not n.read %}unread{% endif %}">
+      <div class="notif-icon {{ notif_icon(n.type) }}">{{ notif_emoji(n.type) }}</div>
+      <div class="notif-body">
+        {{ notif_text(n) }}
+        <div class="notif-time" style="margin-top:.3rem;">
+          {{ n.created_at.strftime('%b %d, %Y %H:%M') }}
+        </div>
+      </div>
+      {% if not n.read %}
+      <form method="POST" action="{{ url_for('notifications.mark_read', notif_id=n.id) }}"
+            style="flex-shrink:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="next" value="{{ request.url }}" />
+        <button class="btn btn-sm btn-ghost" type="submit">✓ Read</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state" style="padding:2.5rem;">
+      <div class="empty-icon">🔔</div>
+      <p>No notifications yet.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{% if project %}Edit Project{% else %}New Project{% endif %}{% endblock %}
+{% block page_title %}{% if project %}Edit Project{% else %}New Project{% endif %}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb mb-3" style="display:flex;gap:.5rem;color:var(--text-muted);font-size:.85rem;">
+  <a href="{{ url_for('projects.list_projects') }}">Projects</a>
+  <span>/</span>
+  <span style="color:var(--text);font-weight:600;">{% if project %}Edit{% else %}New Project{% endif %}</span>
+</nav>
+
+<div style="max-width:680px;margin:0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">{% if project %}✏️ Edit: {{ project.name }}{% else %}＋ Create New Project{% endif %}</span>
+    </div>
+    <div class="card-body">
+      <form method="POST"
+            action="{{ url_for('projects.edit_project', project_id=project.id) if project else url_for('projects.create_project') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label class="form-label" for="name">Project Name <span style="color:var(--danger)">*</span></label>
+          <input class="form-control" type="text" id="name" name="name" maxlength="200" required
+                 placeholder="e.g. Distributed Cloud Computing Cluster"
+                 value="{{ project.name if project else (name or '') }}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="description">Project Description</label>
+          <textarea class="form-control" id="description" name="description" rows="4"
+                    placeholder="Brief overview of problem statement, objectives, and tech stack...">{{ project.description if project else (description or '') }}</textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="status">Project Lifecycle Status</label>
+            <select class="form-control" id="status" name="status">
+              {% for s in ProjectStatusEnum.ALL %}
+              <option value="{{ s }}" {% if (project and project.status == s) or (status == s) %}selected{% endif %}>
+                {{ s.replace('_',' ').title() }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="group_id">Link to Group (Optional)</label>
+            <select class="form-control" id="group_id" name="group_id">
+              <option value="">— Personal Project (No Group) —</option>
+              {% for g in available_groups %}
+              <option value="{{ g.id }}"
+                {% if project and project.group_id == g.id %}selected
+                {% elif not project and request.form.get('group_id')|int == g.id %}selected
+                {% endif %}>
+                {{ g.name }} ({{ g.domain or 'General' }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="github_repo">GitHub Repository URL (Optional)</label>
+            <input class="form-control" type="url" id="github_repo" name="github_repo"
+                   placeholder="https://github.com/..."
+                   value="{{ project.github_repo if project and project.github_repo else (github_repo or '') }}" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="live_demo_url">Live Demo / Deployed URL (Optional)</label>
+            <input class="form-control" type="url" id="live_demo_url" name="live_demo_url"
+                   placeholder="https://demo-app.com"
+                   value="{{ project.live_demo_url if project and project.live_demo_url else (live_demo_url or '') }}" />
+          </div>
+        </div>
+
+        <div class="d-flex justify-between align-center mt-4" style="border-top:1px solid var(--border);padding-top:1rem;">
+          <a href="{{ url_for('projects.detail', project_id=project.id) if project else url_for('projects.list_projects') }}"
+             class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            {% if project %}Save Changes{% else %}Create Project{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

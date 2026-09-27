@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Groups{% endblock %}
+{% block page_title %}Student Groups & Teams{% endblock %}
+
+{% block topbar_actions %}
+  {% if current_user.is_student %}
+  <a href="{{ url_for('groups.create_group') }}" class="btn btn-primary btn-sm">＋ New Group</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-4 flex-wrap gap-3">
+  <div>
+    <h2 style="font-size:1.4rem;font-weight:800;color:var(--text);letter-spacing:-0.02em;">
+      Collaboration Hub
+    </h2>
+    <p class="text-muted text-small">Form multi-disciplinary student teams, invite peers, and request faculty mentor guidance.</p>
+  </div>
+  {% if current_user.is_student %}
+  <a href="{{ url_for('groups.create_group') }}" class="btn btn-primary">
+    ＋ Form New Group
+  </a>
+  {% endif %}
+</div>
+
+{% if groups %}
+<div class="grid-3">
+  {% for g in groups %}
+  <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+    <div>
+      <div style="display:flex;align-items:center;gap:.85rem;padding:1.1rem 1.25rem;border-bottom:1px solid var(--border);">
+        {% if g.image_url %}
+          <img src="{{ g.image_url }}" style="width:44px;height:44px;border-radius:var(--radius);object-fit:cover;" alt="{{ g.name }}" />
+        {% else %}
+          <div style="width:44px;height:44px;border-radius:var(--radius);background:var(--bg-alt);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">👥</div>
+        {% endif %}
+        <div style="flex:1;min-width:0;">
+          <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            <a href="{{ url_for('groups.detail', group_id=g.id) }}" style="color:var(--text);">
+              {{ g.name }}
+            </a>
+          </h3>
+          <div class="d-flex align-center gap-2">
+            <span class="badge badge-{{ g.status }}">{{ g.status }}</span>
+            {% if g.leader_id == current_user.id %}
+              <span class="badge badge-primary">Leader</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if g.description %}
+        <p class="text-muted text-small mb-3" style="line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+          {{ g.description }}
+        </p>
+        {% endif %}
+
+        <div class="mb-3">
+          {% if g.domain %}
+            <span class="tag-chip" style="font-weight:700;color:var(--primary);border-color:var(--primary-glow);">
+              {{ g.domain }}
+            </span>
+          {% endif %}
+          {% for tag in g.get_tech_tags_list()[:3] %}
+            <span class="tag-chip">#{{ tag }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="text-muted text-small d-flex flex-column gap-1">
+          <div>👥 <strong>{{ g.accepted_member_count() }} / {{ g.max_members }}</strong> members enrolled</div>
+          {% if g.mentor %}
+            <div>🧑‍🏫 Mentor: <strong>{{ g.mentor.name }}</strong></div>
+          {% else %}
+            <div style="color:var(--warning);">⏳ Mentor not yet assigned</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <a href="{{ url_for('groups.detail', group_id=g.id) }}" class="btn btn-sm btn-secondary" style="width:100%;">
+        View Group Details →
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:3.5rem 1rem;">
+    <div style="font-size:3rem;margin-bottom:1rem;">👥</div>
+    <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:.5rem;">No groups registered yet</h3>
+    <p class="text-muted mb-4">Start by forming a project team and inviting peers.</p>
+    {% if current_user.is_student %}
+    <a href="{{ url_for('groups.create_group') }}" class="btn btn-primary">Form First Group</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

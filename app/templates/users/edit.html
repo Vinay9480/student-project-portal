@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile — {{ user.name }}{% endblock %}
+{% block page_title %}Edit Profile{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb mb-3" style="display:flex;gap:.5rem;color:var(--text-muted);font-size:.85rem;">
+  <a href="{{ url_for('users.profile', user_id=user.id) }}">Profile</a>
+  <span>/</span>
+  <span style="color:var(--text);font-weight:600;">Edit</span>
+</nav>
+
+<div style="max-width:580px;margin:0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">✏️ Edit Profile Information</span>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('users.edit_user', user_id=user.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label class="form-label">Full Name <span style="color:var(--danger)">*</span></label>
+          <input class="form-control" type="text" name="name" value="{{ user.name }}" required maxlength="120" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-control" type="text" value="{{ user.email }}" disabled style="opacity:0.75;cursor:not-allowed;" />
+          <span class="text-small text-muted">Email address is permanently linked to your account.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Short Bio / About You</label>
+          <textarea class="form-control" name="bio" rows="3" placeholder="Tell your teammates about your technical interests, skills, and background...">{{ user.bio or '' }}</textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">GitHub Profile URL</label>
+            <input class="form-control" type="url" name="github_url" placeholder="https://github.com/username" value="{{ user.github_url or '' }}" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">LinkedIn Profile URL</label>
+            <input class="form-control" type="url" name="linkedin_url" placeholder="https://linkedin.com/in/username" value="{{ user.linkedin_url or '' }}" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Profile Avatar Image</label>
+          <input class="form-control" type="file" name="avatar" accept="image/*" />
+          <span class="text-small text-muted">Upload a PNG or JPG photo to personalize your profile.</span>
+        </div>
+
+        {% if current_user.is_admin %}
+        <div class="form-group">
+          <label class="form-label">Account Role (Admin Only)</label>
+          <select class="form-control" name="role">
+            {% for r in roles %}
+            <option value="{{ r }}" {% if user.role == r %}selected{% endif %}>{{ r.title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-between align-center mt-4" style="border-top:1px solid var(--border);padding-top:1rem;">
+          <a href="{{ url_for('users.profile', user_id=user.id) }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

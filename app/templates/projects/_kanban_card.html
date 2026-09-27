@@ -1,0 +1,47 @@
+<div class="kanban-card" data-task-id="{{ t.id }}">
+  <div class="kanban-card-top">
+    <span class="badge badge-priority badge-{{ t.priority }}">{{ t.priority }}</span>
+    <span class="badge badge-{{ t.status }} status-badge">{{ t.status.replace('_',' ') }}</span>
+  </div>
+
+  <div class="kanban-card-title">
+    <a href="{{ url_for('tasks.task_detail', task_id=t.id) }}">
+      {{ t.title }}
+    </a>
+  </div>
+
+  {% if t.tags %}
+    <div style="margin-bottom:.5rem;">
+      {% for tag in t.get_tags_list() %}
+        <span class="tag-chip">#{{ tag }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="kanban-card-meta">
+    <div class="d-flex align-center gap-2">
+      {% if t.assignee %}
+        <div class="user-avatar" style="width:24px;height:24px;font-size:.65rem;" title="{{ t.assignee.name }}">
+          {{ t.assignee.initials }}
+        </div>
+        <span style="font-size:.78rem;font-weight:500;">{{ t.assignee.name.split()[0] }}</span>
+      {% else %}
+        <span class="text-muted" style="font-size:.78rem;">Unassigned</span>
+      {% endif %}
+    </div>
+
+    <div class="d-flex align-center gap-2">
+      {% if (t.comments | length) > 0 %}
+        <span title="{{ t.comments | length }} comments">💬 {{ t.comments | length }}</span>
+      {% endif %}
+      {% if t.attachments.count() > 0 %}
+        <span title="{{ t.attachments.count() }} files">📎 {{ t.attachments.count() }}</span>
+      {% endif %}
+      {% if t.due_date %}
+        <span {% if t.is_overdue %}style="color:var(--danger);font-weight:700;"{% endif %} title="Due date">
+          📅 {{ t.due_date.strftime('%b %d') }}
+        </span>
+      {% endif %}
+    </div>
+  </div>
+</div>

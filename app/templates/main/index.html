@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% block title %}Welcome — Student Project Management Portal{% endblock %}
+
+{% block auth_content %}
+<div class="landing-wrapper">
+
+  <!-- Top Navigation -->
+  <header class="landing-navbar">
+    <div class="landing-nav-container">
+      <div class="landing-brand">
+        <div class="landing-logo-icon">🎓</div>
+        <span class="landing-brand-text">StudentPortal</span>
+        <span class="badge badge-primary" style="font-size:0.7rem;padding:0.2rem 0.5rem;letter-spacing:0.04em;">v2.0 PRO</span>
+      </div>
+
+      <nav class="landing-nav-links">
+        <a href="#features" class="landing-nav-link">Features</a>
+        <a href="#workflow" class="landing-nav-link">Workflow</a>
+        <a href="#demo-accounts" class="landing-nav-link">Demo Logins</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm" style="font-weight:600;">Log In</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm" style="box-shadow:0 0 16px rgba(99,102,241,0.4);">Get Started</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="landing-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-container">
+      <div class="hero-pill">
+        <span class="pill-dot"></span>
+        <span>Academic Project Management & Collaboration Platform</span>
+      </div>
+
+      <h1 class="hero-title">
+        Deliver Better Student Projects,<br />
+        <span class="hero-gradient-text">From Concept to Defense.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Empower students, faculty mentors, and academic coordinators with interactive Kanban boards,
+        group formation tools, milestone tracking, and real-time collaboration — all in one modern dark-mode workspace.
+      </p>
+
+      <div class="hero-actions">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg hero-btn-primary">
+          <span>🚀 Explore the Portal</span>
+        </a>
+        <a href="#demo-accounts" class="btn btn-secondary btn-lg hero-btn-secondary">
+          <span>⚡ Try Demo Accounts</span>
+        </a>
+      </div>
+
+      <!-- Quick Platform Stats -->
+      <div class="hero-metrics">
+        <div class="metric-item">
+          <div class="metric-number">100%</div>
+          <div class="metric-label">Role-Based Access (Student / Mentor / Admin)</div>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <div class="metric-number">Kanban</div>
+          <div class="metric-label">Interactive Drag & Drop Task Board</div>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <div class="metric-number">Ctrl + K</div>
+          <div class="metric-label">Instant Command Palette Search</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Live Mockup Preview -->
+  <section class="landing-preview-section">
+    <div class="preview-container">
+      <div class="preview-window">
+        <div class="preview-window-header">
+          <div class="preview-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="preview-address-bar">
+            <span>🔒 studentportal.edu/projects/ai-healthcare-assistant</span>
+          </div>
+          <div class="preview-window-badge">
+            <span class="pulse-indicator"></span> Live Kanban View
+          </div>
+        </div>
+
+        <div class="preview-window-body">
+          <div class="mock-project-header">
+            <div>
+              <span class="badge badge-success" style="font-size:0.75rem;">Active Project</span>
+              <h3 style="font-size:1.25rem;font-weight:700;margin:0.35rem 0 0.2rem 0;color:#f8fafc;">AI Healthcare Assistant</h3>
+              <p style="color:#94a3b8;font-size:0.85rem;margin:0;">Deep learning diagnostic assistant for clinical triage</p>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:0.85rem;font-weight:700;color:#818cf8;">Progress: 75%</span>
+              <div class="progress-wrap" style="width:120px;height:8px;margin-top:0.3rem;">
+                <div class="progress-bar" style="width:75%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini Mock Kanban Board -->
+          <div class="mock-kanban-grid">
+            <!-- To Do -->
+            <div class="mock-column">
+              <div class="mock-col-header">
+                <span class="mock-col-title">To Do</span>
+                <span class="mock-col-count">2</span>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-tags">
+                  <span class="badge badge-urgent" style="font-size:0.65rem;">Urgent</span>
+                  <span class="tag" style="font-size:0.65rem;padding:0.15rem 0.4rem;">Deployment</span>
+                </div>
+                <div class="mock-card-title">Dockerize Flask and SQLite backend</div>
+                <div class="mock-card-footer">
+                  <div class="avatar" style="width:24px;height:24px;font-size:0.7rem;">AR</div>
+                  <span style="font-size:0.75rem;color:#94a3b8;">Oct 12</span>
+                </div>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-tags">
+                  <span class="badge badge-medium" style="font-size:0.65rem;">Medium</span>
+                </div>
+                <div class="mock-card-title">Setup CI/CD GitHub Actions workflow</div>
+                <div class="mock-card-footer">
+                  <div class="avatar" style="width:24px;height:24px;font-size:0.7rem;">LC</div>
+                  <span style="font-size:0.75rem;color:#94a3b8;">Oct 15</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- In Progress -->
+            <div class="mock-column">
+              <div class="mock-col-header">
+                <span class="mock-col-title">In Progress</span>
+                <span class="mock-col-count">1</span>
+              </div>
+              <div class="mock-card highlight-card">
+                <div class="mock-card-tags">
+                  <span class="badge badge-high" style="font-size:0.65rem;">High</span>
+                  <span class="tag" style="font-size:0.65rem;padding:0.15rem 0.4rem;">ML / NLP</span>
+                </div>
+                <div class="mock-card-title">Train BioBERT model on clinical notes</div>
+                <div class="mock-card-footer">
+                  <div class="avatar" style="width:24px;height:24px;font-size:0.7rem;background:#8b5cf6;">SP</div>
+                  <span style="font-size:0.75rem;color:#94a3b8;">Oct 08</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- In Review -->
+            <div class="mock-column">
+              <div class="mock-col-header">
+                <span class="mock-col-title">In Review</span>
+                <span class="mock-col-count">1</span>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-tags">
+                  <span class="badge badge-medium" style="font-size:0.65rem;">Medium</span>
+                </div>
+                <div class="mock-card-title">REST API endpoints for patient records</div>
+                <div class="mock-card-footer">
+                  <div class="avatar" style="width:24px;height:24px;font-size:0.7rem;">AR</div>
+                  <span style="font-size:0.75rem;color:#34d399;">Ready for Mentor</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Done -->
+            <div class="mock-column">
+              <div class="mock-col-header">
+                <span class="mock-col-title">Done</span>
+                <span class="mock-col-count">3</span>
+              </div>
+              <div class="mock-card completed-card">
+                <div class="mock-card-tags">
+                  <span class="badge badge-success" style="font-size:0.65rem;">Completed</span>
+                </div>
+                <div class="mock-card-title" style="text-decoration:line-through;color:#94a3b8;">Project proposal approved by faculty</div>
+                <div class="mock-card-footer">
+                  <div class="avatar" style="width:24px;height:24px;font-size:0.7rem;background:#10b981;">SC</div>
+                  <span style="font-size:0.75rem;color:#34d399;">✓ Verified</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid Section -->
+  <section class="landing-features" id="features">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="badge badge-primary" style="margin-bottom:0.75rem;">Platform Capabilities</span>
+        <h2 class="section-title">Built specifically for Academic Project Lifecycles</h2>
+        <p class="section-subtitle">Everything students and faculty need to organize capstones, semester deliverables, and committee reviews.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3);">📋</div>
+          <h3 class="feature-title">Interactive Kanban Board</h3>
+          <p class="feature-desc">Drag and drop tasks between To Do, In Progress, Review, and Done. Auto-recalculates project progress in real time.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);">👥</div>
+          <h3 class="feature-title">Team Group Management</h3>
+          <p class="feature-desc">Form teams with capacity limits, invite registered students, assign leadership, and track domain tech stacks.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">🧑‍🏫</div>
+          <h3 class="feature-title">Faculty Mentorship Hub</h3>
+          <p class="feature-desc">Send mentorship requests to faculty guides, submit deliverables, and receive structured feedback on milestones.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(236,72,153,0.15);color:#f472b6;border:1px solid rgba(236,72,153,0.3);">⚡</div>
+          <h3 class="feature-title">Ctrl + K Command Palette</h3>
+          <p class="feature-desc">Instant spotlight search across all tasks, repositories, deliverables, groups, and users from anywhere in the app.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">📎</div>
+          <h3 class="feature-title">Milestones & Deliverables</h3>
+          <p class="feature-desc">Upload reports, code archives, presentation slides, and manage deliverable milestones with deadlines.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3);">📊</div>
+          <h3 class="feature-title">Real-Time Analytics</h3>
+          <p class="feature-desc">Visual project completion gauges, task distribution charts, and audit trail logs for complete academic oversight.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Accounts One-Click Launch Section -->
+  <section class="landing-demo-section" id="demo-accounts">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="badge badge-success" style="margin-bottom:0.75rem;">Instant Access</span>
+        <h2 class="section-title">Ready-To-Test Demo Accounts</h2>
+        <p class="section-subtitle">Click any role below to pre-fill login credentials and explore the portal immediately:</p>
+      </div>
+
+      <div class="demo-cards-grid">
+        <!-- Student Leader -->
+        <a href="{{ url_for('auth.login') }}?email=alex.rivera@student.edu" class="demo-card">
+          <div class="demo-card-header">
+            <div class="avatar" style="background:linear-gradient(135deg,#6366f1,#38bdf8);">AR</div>
+            <div>
+              <div class="demo-card-role">Student Leader</div>
+              <div class="demo-card-name">Alex Rivera</div>
+            </div>
+          </div>
+          <div class="demo-card-email">alex.rivera@student.edu</div>
+          <div class="demo-card-desc">Leads AI Healthcare team, manages Kanban board, invites students, tracks deliverables.</div>
+          <div class="demo-card-action">
+            <span>Log in as Student</span> <span>→</span>
+          </div>
+        </a>
+
+        <!-- Faculty Mentor -->
+        <a href="{{ url_for('auth.login') }}?email=dr.sarah.connor@university.edu" class="demo-card">
+          <div class="demo-card-header">
+            <div class="avatar" style="background:linear-gradient(135deg,#10b981,#06b6d4);">SC</div>
+            <div>
+              <div class="demo-card-role">Faculty Mentor</div>
+              <div class="demo-card-name">Dr. Sarah Connor</div>
+            </div>
+          </div>
+          <div class="demo-card-email">dr.sarah.connor@university.edu</div>
+          <div class="demo-card-desc">Reviews student group requests, monitors milestones, and grades project progress.</div>
+          <div class="demo-card-action">
+            <span>Log in as Mentor</span> <span>→</span>
+          </div>
+        </a>
+
+        <!-- Admin -->
+        <a href="{{ url_for('auth.login') }}?email=admin@studentportal.edu" class="demo-card">
+          <div class="demo-card-header">
+            <div class="avatar" style="background:linear-gradient(135deg,#f43f5e,#fb923c);">SA</div>
+            <div>
+              <div class="demo-card-role">Portal Administrator</div>
+              <div class="demo-card-name">System Admin</div>
+            </div>
+          </div>
+          <div class="demo-card-email">admin@studentportal.edu</div>
+          <div class="demo-card-desc">Oversees all campus projects, manages user roles, and views global analytics.</div>
+          <div class="demo-card-action">
+            <span>Log in as Admin</span> <span>→</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="landing-footer-container">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:1.25rem;">🎓</span>
+        <span style="font-weight:700;color:#f8fafc;">StudentPortal</span>
+        <span style="color:#64748b;font-size:0.85rem;">— Academic Project Management System</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:1.5rem;font-size:0.85rem;color:#94a3b8;">
+        <span style="display:flex;align-items:center;gap:0.4rem;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#34d399;display:inline-block;box-shadow:0 0 8px #34d399;"></span>
+          Server Online (Port 5001)
+        </span>
+        <a href="{{ url_for('auth.login') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">Sign In</a>
+        <a href="{{ url_for('auth.register') }}" style="color:var(--text-muted);text-decoration:none;">Register</a>
+      </div>
+    </div>
+  </footer>
+
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Overview Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  {% if not current_user.is_mentor %}
+  <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary btn-sm">＋ New Project</a>
+  {% endif %}
+  {% if current_user.is_student %}
+  <a href="{{ url_for('groups.create_group') }}" class="btn btn-secondary btn-sm">＋ New Group</a>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Task Status Doughnut Chart
+  const statusCtx = document.getElementById("statusChart");
+  if (statusCtx) {
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    const todo = {{ todo_count | default(0) }};
+    const inProg = {{ in_prog_count | default(0) }};
+    const done = {{ done_count | default(0) }};
+
+    window._statusChart = new Chart(statusCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["To Do", "In Progress", "Done"],
+        datasets: [{
+          data: [todo, inProg, done],
+          backgroundColor: ["#94a3b8", "#6366f1", "#10b981"],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "70%",
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              padding: 15,
+              color: isDark ? "#94a3b8" : "#475569",
+              font: { family: "Inter", size: 12, weight: 600 }
+            }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-header">
+      <span>Total Projects</span>
+      <div class="stat-icon">📁</div>
+    </div>
+    <span class="stat-value">{{ projects | length }}</span>
+    <span class="stat-sub text-muted">Across all your teams</span>
+  </div>
+
+  <div class="stat-card stat-success">
+    <div class="stat-header">
+      <span>Overall Progress</span>
+      <div class="stat-icon">📈</div>
+    </div>
+    <span class="stat-value">{{ overall_progress }}%</span>
+    <div class="progress-wrap mt-3" style="height:6px;">
+      <div class="progress-bar" style="width:{{ overall_progress }}%;"></div>
+    </div>
+  </div>
+
+  <div class="stat-card {% if urgent_count > 0 %}stat-danger{% else %}stat-warning{% endif %}">
+    <div class="stat-header">
+      <span>Tasks Due</span>
+      <div class="stat-icon">✅</div>
+    </div>
+    <span class="stat-value">{{ my_tasks | length }}</span>
+    <span class="stat-sub">
+      {% if overdue_count > 0 %}
+        <span style="color:var(--danger);font-weight:700;">⚠ {{ overdue_count }} overdue</span>
+      {% elif urgent_count > 0 %}
+        <span style="color:var(--danger);font-weight:700;">⚡ {{ urgent_count }} urgent</span>
+      {% else %}
+        <span class="text-muted">Assigned to you</span>
+      {% endif %}
+    </span>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span>Active Groups</span>
+      <div class="stat-icon">👥</div>
+    </div>
+    <span class="stat-value">{{ my_groups | length }}</span>
+    <span class="stat-sub text-muted">Student & Mentor groups</span>
+  </div>
+</div>
+
+<!-- Middle Section: Visual Analytics & Recent Projects -->
+<div class="grid-2 mb-4">
+  <!-- Analytics Chart Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📊 Task Distribution</span>
+      <span class="text-small text-muted">{{ total_tasks }} total tasks</span>
+    </div>
+    <div class="card-body">
+      {% if total_tasks > 0 %}
+      <div style="position:relative;height:220px;">
+        <canvas id="statusChart"></canvas>
+      </div>
+      <div class="d-flex justify-between mt-3 text-small" style="border-top:1px solid var(--border);padding-top:.85rem;">
+        <div style="text-align:center;">
+          <div style="font-weight:700;color:#94a3b8;">{{ todo_count }}</div>
+          <div class="text-muted">To Do</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-weight:700;color:var(--primary);">{{ in_prog_count }}</div>
+          <div class="text-muted">In Progress</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-weight:700;color:var(--success);">{{ done_count }}</div>
+          <div class="text-muted">Completed</div>
+        </div>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:2.5rem 1rem;color:var(--text-muted);">
+        <div style="font-size:2rem;margin-bottom:.5rem;">📋</div>
+        <p>No task data available yet to display charts.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Projects List -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📁 Active Projects</span>
+      <a href="{{ url_for('projects.list_projects') }}" class="btn btn-sm btn-ghost">View All →</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+      {% if projects %}
+        {% for p in projects %}
+        <a href="{{ url_for('projects.detail', project_id=p.id) }}"
+           style="display:flex;align-items:center;justify-content:space-between;
+                  padding:.9rem 1.4rem;border-bottom:1px solid var(--border);
+                  color:inherit;text-decoration:none;transition:background var(--transition-fast);"
+           onmouseover="this.style.background='var(--bg-alt)'"
+           onmouseout="this.style.background='transparent'">
+          <div style="min-width:0;flex:1;padding-right:1rem;">
+            <div style="font-weight:600;font-size:.95rem;color:var(--text);margin-bottom:.2rem;">
+              {{ p.name }}
+            </div>
+            <div class="text-muted text-small d-flex align-center gap-2">
+              {% if p.group %}
+                <span>👥 {{ p.group.name }}</span>
+              {% else %}
+                <span>👤 Personal</span>
+              {% endif %}
+              <span>·</span>
+              <span class="badge badge-{{ p.status }}">{{ p.status.replace('_',' ') }}</span>
+            </div>
+          </div>
+          <div style="text-align:right;min-width:90px;">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text);">{{ p.progress() }}%</div>
+            <div class="progress-wrap" style="width:90px;margin-top:.35rem;">
+              <div class="progress-bar" style="width:{{ p.progress() }}%;"></div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+          <div style="font-size:2rem;margin-bottom:.5rem;">📂</div>
+          <p>No projects yet.</p>
+          {% if not current_user.is_mentor %}
+          <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary btn-sm mt-3">Create First Project</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Section: My Tasks & My Groups -->
+<div class="grid-2">
+  <!-- My Tasks Priority Feed -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">✅ My Priority Tasks</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      {% if my_tasks %}
+        {% for t in my_tasks %}
+        <a href="{{ url_for('tasks.task_detail', task_id=t.id) }}"
+           style="display:block;padding:.85rem 1.4rem;border-bottom:1px solid var(--border);
+                  color:inherit;text-decoration:none;
+                  {% if t.is_overdue %}border-left:3px solid var(--danger);{% endif %}
+                  transition:background var(--transition-fast);"
+           onmouseover="this.style.background='var(--bg-alt)'"
+           onmouseout="this.style.background='transparent'">
+          <div class="d-flex align-center justify-between mb-2">
+            <span style="font-size:.92rem;font-weight:600;color:var(--text);">{{ t.title }}</span>
+            <div class="d-flex gap-2">
+              <span class="badge badge-priority badge-{{ t.priority }}">{{ t.priority }}</span>
+              <span class="badge badge-{{ t.status }}">{{ t.status.replace('_',' ') }}</span>
+            </div>
+          </div>
+          <div class="d-flex align-center gap-3 text-small text-muted">
+            <span>📁 {{ t.project.name }}</span>
+            {% if t.due_date %}
+              <span {% if t.is_overdue %}style="color:var(--danger);font-weight:700;"{% endif %}>
+                📅 Due: {{ t.due_date }}
+              </span>
+            {% endif %}
+            {% if t.is_overdue %}
+              <span class="badge badge-overdue">Overdue</span>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+          <div style="font-size:2rem;margin-bottom:.5rem;">🎉</div>
+          <p>All caught up! No pending tasks assigned to you.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- My Groups -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">👥 My Groups</span>
+      <a href="{{ url_for('groups.list_groups') }}" class="btn btn-sm btn-ghost">View All →</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+      {% if my_groups %}
+        {% for g in my_groups %}
+        <a href="{{ url_for('groups.detail', group_id=g.id) }}"
+           style="display:flex;align-items:center;gap:1rem;padding:.9rem 1.4rem;
+                  border-bottom:1px solid var(--border);color:inherit;text-decoration:none;
+                  transition:background var(--transition-fast);"
+           onmouseover="this.style.background='var(--bg-alt)'"
+           onmouseout="this.style.background='transparent'">
+          {% if g.image_url %}
+            <img src="{{ g.image_url }}" style="width:42px;height:42px;border-radius:var(--radius);object-fit:cover;" alt="{{ g.name }}" />
+          {% else %}
+            <div style="width:42px;height:42px;border-radius:var(--radius);background:var(--bg-alt);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">👥</div>
+          {% endif %}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:.95rem;color:var(--text);">{{ g.name }}</div>
+            <div class="text-muted text-small d-flex align-center gap-2">
+              <span>{{ g.domain or 'General' }}</span>
+              <span>·</span>
+              <span>{{ g.accepted_member_count() }}/{{ g.max_members }} members</span>
+            </div>
+          </div>
+          {% if g.leader_id == current_user.id %}
+            <span class="badge badge-primary">Leader</span>
+          {% elif g.mentor_id == current_user.id %}
+            <span class="badge" style="background:var(--info-light);color:var(--info);">Mentor</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+          <div style="font-size:2rem;margin-bottom:.5rem;">👥</div>
+          <p>You haven't joined or created any groups yet.</p>
+          {% if current_user.is_student %}
+          <a href="{{ url_for('groups.create_group') }}" class="btn btn-secondary btn-sm mt-3">Form a Group</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}File Too Large{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div>
+    <div class="error-code">413</div>
+    <div class="error-msg">File Too Large</div>
+    <p class="text-muted">The uploaded file exceeds the 2 MB limit.</p>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary mt-3">Go Back</a>
+  </div>
+</div>
+{% endblock %}
+{% block auth_content %}{{ self.content() }}{% endblock %}

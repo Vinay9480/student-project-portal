@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Server Error{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div>
+    <div class="error-code">500</div>
+    <div class="error-msg">Internal Server Error</div>
+    <p class="text-muted">Something went wrong on our end. Please try again later.</p>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary mt-3">Go Home</a>
+  </div>
+</div>
+{% endblock %}
+{% block auth_content %}
+<div class="error-page">
+  <div>
+    <div class="error-code">500</div>
+    <div class="error-msg">Server Error</div>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary mt-3">Log In</a>
+  </div>
+</div>
+{% endblock %}

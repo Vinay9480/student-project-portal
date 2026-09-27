@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Groups</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <a href="{{ url_for('users.profile', user_id=u.id) }}" style="font-weight:500;">{{ u.name }}</a>
+          </td>
+          <td class="text-muted text-small">{{ u.email }}</td>
+          <td><span class="user-role role-{{ u.role }}">{{ u.role }}</span></td>
+          <td class="text-small">{{ u.accepted_group_count() }}</td>
+          <td class="text-muted text-small">{{ u.created_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            <a href="{{ url_for('users.edit_user', user_id=u.id) }}" class="btn btn-sm btn-ghost">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

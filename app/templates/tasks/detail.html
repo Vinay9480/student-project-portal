@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }} — Task Detail{% endblock %}
+{% block page_title %}Task: {{ task.title }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb mb-3" style="display:flex;gap:.5rem;color:var(--text-muted);font-size:.85rem;">
+  <a href="{{ url_for('projects.list_projects') }}">Projects</a>
+  <span>/</span>
+  <a href="{{ url_for('projects.detail', project_id=project.id) }}">{{ project.name }}</a>
+  <span>/</span>
+  <a href="{{ url_for('tasks.list_tasks', project_id=project.id) }}">Tasks</a>
+  <span>/</span>
+  <span style="color:var(--text);font-weight:600;">{{ task.title }}</span>
+</nav>
+
+<div class="grid-2 mb-4" style="align-items:start;">
+  <!-- Left Column: Task Info, Attachments, Comments -->
+  <div>
+    <!-- Main Task Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <div style="flex:1;">
+          <div class="d-flex align-center gap-2 mb-1 flex-wrap">
+            <span class="badge badge-priority badge-{{ task.priority }}">{{ task.priority }}</span>
+            <span class="badge badge-{{ task.status }} status-badge">{{ task.status.replace('_',' ') }}</span>
+            {% if task.is_overdue %}<span class="badge badge-overdue">Overdue</span>{% endif %}
+          </div>
+          <h2 style="font-size:1.35rem;font-weight:800;color:var(--text);margin-top:.3rem;">
+            {{ task.title }}
+          </h2>
+        </div>
+
+        <div class="d-flex gap-2">
+          {% if current_user.is_admin or project.owner_id == current_user.id or task.assignee_id == current_user.id %}
+          <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-sm btn-secondary">✏️ Edit</a>
+          {% endif %}
+          {% if current_user.is_admin or project.owner_id == current_user.id %}
+          <form id="delete-task-form" method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="button" class="btn btn-sm btn-danger"
+                    onclick="openConfirmModal('delete-task-form','Permanently delete this task and its history?')">
+              🗑
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if task.tags %}
+          <div class="mb-3">
+            {% for tag in task.get_tags_list() %}
+              <span class="tag-chip">#{{ tag }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if task.description %}
+          <div style="color:var(--text);font-size:.95rem;line-height:1.6;white-space:pre-wrap;margin-bottom:1.5rem;padding:1rem;background:var(--bg-alt);border-radius:var(--radius);">
+            {{ task.description }}
+          </div>
+        {% endif %}
+
+        <!-- Quick Status Switcher & Metadata Grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:1rem;border-top:1px solid var(--border);padding-top:1.25rem;">
+          <div>
+            <div class="text-muted text-small">Quick Status</div>
+            <select class="form-control form-control-sm mt-1 task-status-select" data-task-id="{{ task.id }}" style="padding:.3rem .6rem;">
+              {% for s in TaskStatusEnum.ALL %}
+              <option value="{{ s }}" {% if task.status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <div class="text-muted text-small">Assignee</div>
+            <div class="mt-1" style="font-weight:600;">
+              {% if task.assignee %}
+                <a href="{{ url_for('users.profile', user_id=task.assignee_id) }}">{{ task.assignee.name }}</a>
+              {% else %}
+                <span class="text-muted">Unassigned</span>
+              {% endif %}
+            </div>
+          </div>
+          <div>
+            <div class="text-muted text-small">Due Date</div>
+            <div class="mt-1" style="font-weight:600;{% if task.is_overdue %}color:var(--danger);{% endif %}">
+              {% if task.due_date %}{{ task.due_date }}{% else %}<span class="text-muted">—</span>{% endif %}
+            </div>
+          </div>
+          <div>
+            <div class="text-muted text-small">Created On</div>
+            <div class="mt-1 text-muted">{{ task.created_at.strftime('%b %d, %Y') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Attachments Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <span class="card-title">📎 Attachments ({{ attachments | length }})</span>
+      </div>
+      <div class="card-body">
+        {% if attachments %}
+          <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.25rem;">
+            {% for att in attachments %}
+            <div class="d-flex align-center justify-between"
+                 style="padding:.65rem .85rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);">
+              <div class="d-flex align-center gap-2" style="min-width:0;">
+                <span>📄</span>
+                <div style="min-width:0;">
+                  <div style="font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    {{ att.original_name }}
+                  </div>
+                  <div class="text-muted text-small">{{ att.formatted_size }} · by {{ att.uploader.name }}</div>
+                </div>
+              </div>
+              <div class="d-flex align-center gap-2">
+                <a href="{{ url_for('static', filename='uploads/attachments/' + att.filename) }}" download class="btn btn-sm btn-secondary">⬇</a>
+                {% if current_user.is_admin or att.uploader_id == current_user.id or project.owner_id == current_user.id %}
+                <form method="POST" action="{{ url_for('tasks.delete_attachment', attachment_id=att.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button class="btn btn-sm btn-ghost">✕</button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted text-small mb-3">No attachments uploaded for this task.</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('tasks.upload_task_attachment', task_id=task.id) }}" enctype="multipart/form-data" class="d-flex gap-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="file" name="attachment" class="form-control" required style="font-size:.82rem;" />
+          <button type="submit" class="btn btn-sm btn-primary">Upload</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Task Comments -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">💬 Task Discussion</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('comments.add_task_comment', task_id=task.id) }}" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="form-group">
+            <textarea name="text" class="form-control" placeholder="Write a comment or ask for updates..." rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add Comment</button>
+        </form>
+
+        {% if comments %}
+          <div style="display:flex;flex-direction:column;gap:.75rem;">
+            {% for c in comments %}
+            <div style="padding:.85rem 1rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);">
+              <div class="d-flex align-center justify-between mb-1">
+                <div class="d-flex align-center gap-2">
+                  <div class="user-avatar" style="width:26px;height:26px;font-size:.7rem;">{{ c.author.initials }}</div>
+                  <strong style="font-size:.88rem;">{{ c.author.name }}</strong>
+                  <span class="badge badge-todo" style="font-size:.68rem;">{{ c.author.role }}</span>
+                </div>
+                <span class="text-muted text-small">{{ c.created_at.strftime('%b %d, %H:%M') }}</span>
+              </div>
+              <p style="font-size:.9rem;white-space:pre-wrap;color:var(--text);margin-top:.3rem;">{{ c.text }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted text-small">No comments yet on this task.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Activity History -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📜 Audit Trail & Activity</span>
+    </div>
+    <div class="card-body">
+      {% if activity %}
+        <div class="timeline">
+          {% for log in activity %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div style="font-size:.88rem;">
+              <strong>{{ log.actor.name }}</strong>
+              {% if log.field_changed == 'created' %}
+                created this task with status <span class="badge badge-{{ log.new_value }}">{{ log.new_value }}</span>
+              {% elif log.field_changed == 'status' %}
+                moved status from <span class="badge badge-{{ log.old_value }}">{{ log.old_value }}</span> to <span class="badge badge-{{ log.new_value }}">{{ log.new_value }}</span>
+              {% else %}
+                updated <strong>{{ log.field_changed }}</strong>
+              {% endif %}
+              <div class="text-muted text-small mt-1">{{ log.changed_at.strftime('%b %d, %Y at %H:%M') }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <span class="text-muted text-small">No activity recorded yet.</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

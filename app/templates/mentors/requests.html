@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Mentor Requests{% endblock %}
+{% block page_title %}Pending Mentor Requests{% endblock %}
+
+{% block content %}
+{% if requests %}
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Group</th>
+          <th>Leader</th>
+          <th>Domain</th>
+          <th>Members</th>
+          <th>Requested</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr>
+          <td>
+            <a href="{{ url_for('groups.detail', group_id=r.group_id) }}">{{ r.group.name }}</a>
+          </td>
+          <td>{{ r.group.leader.name }}</td>
+          <td>{{ r.group.domain or '—' }}</td>
+          <td class="text-small">{{ r.group.accepted_member_count() }}</td>
+          <td class="text-muted text-small">{{ r.requested_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            <div style="display:flex;gap:.4rem;">
+              <form method="POST" action="{{ url_for('mentors.accept_mentor_request', request_id=r.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button class="btn btn-sm btn-success" type="submit">Accept</button>
+              </form>
+              <form method="POST" action="{{ url_for('mentors.reject_mentor_request', request_id=r.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button class="btn btn-sm btn-danger" type="submit">Reject</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <div class="empty-icon">🧑‍🏫</div>
+      <p>No pending mentor requests.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

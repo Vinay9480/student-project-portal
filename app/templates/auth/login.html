@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Log In — StudentPortal{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:460px;">
+    <div class="auth-logo">
+      <span class="logo-icon">🎓</span>
+      StudentPortal
+    </div>
+    <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:0.35rem;text-align:center;color:#f8fafc;">Welcome Back</h2>
+    <p style="text-align:center;color:#94a3b8;font-size:0.85rem;margin-bottom:1.5rem;">Sign in to your academic project workspace</p>
+
+    <!-- Quick Demo Accounts One-Click Fill -->
+    <div style="background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;margin-bottom:1.25rem;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:#818cf8;margin-bottom:0.5rem;letter-spacing:0.04em;">
+        ⚡ Instant Demo Logins
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:0.25rem 0.55rem;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;"
+                onclick="fillLogin('alex.rivera@student.edu', 'password123')">
+          🎓 Student
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:0.25rem 0.55rem;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#6ee7b7;"
+                onclick="fillLogin('dr.sarah.connor@university.edu', 'password123')">
+          🧑‍🏫 Mentor
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:0.25rem 0.55rem;background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);color:#fda4af;"
+                onclick="fillLogin('admin@studentportal.edu', 'admin123')">
+          🛡️ Admin
+        </button>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.login') }}" novalidate id="login-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <div class="form-group">
+        <label class="form-label" for="email">Institutional Email</label>
+        <input class="form-control" type="email" id="email" name="email"
+               value="{{ request.args.get('email', email or '') }}" required autofocus placeholder="name@university.edu" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-control" type="password" id="password" name="password" required placeholder="••••••••" />
+      </div>
+
+      <div class="form-check form-group" style="margin-bottom:1.25rem;">
+        <input class="form-check-input" type="checkbox" id="remember" name="remember" checked />
+        <label for="remember" style="font-size:.875rem;color:var(--text-muted);cursor:pointer;">Stay signed in for 30 days</label>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 btn-lg" style="box-shadow:0 0 20px rgba(99,102,241,0.4);">
+        Sign In to Portal →
+      </button>
+    </form>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;font-size:0.85rem;color:var(--text-muted);">
+      <a href="{{ url_for('main.index') }}" style="color:var(--text-muted);text-decoration:none;">← Back to Home</a>
+      <span>New here? <a href="{{ url_for('auth.register') }}" style="color:var(--primary);font-weight:600;text-decoration:none;">Create account</a></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function fillLogin(email, password) {
+    document.getElementById('email').value = email;
+    document.getElementById('password').value = password;
+  }
+
+  // Auto-fill password if email came from query params
+  document.addEventListener('DOMContentLoaded', function() {
+    var emailVal = document.getElementById('email').value;
+    if (emailVal === 'admin@studentportal.edu') {
+      document.getElementById('password').value = 'admin123';
+    } else if (emailVal) {
+      document.getElementById('password').value = 'password123';
+    }
+  });
+</script>
+{% endblock %}

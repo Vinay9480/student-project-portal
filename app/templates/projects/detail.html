@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const ctx = document.getElementById("progressChart");
+  if (!ctx) return;
+  const pct = {{ progress }};
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+  window._progressChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      datasets: [{
+        data: [pct, 100 - pct],
+        backgroundColor: ["#6366f1", isDark ? "#1e293b" : "#e2e8f0"],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "75%",
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    }
+  });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav class="breadcrumb mb-3" style="display:flex;gap:.5rem;color:var(--text-muted);font-size:.85rem;">
+  <a href="{{ url_for('projects.list_projects') }}">Projects</a>
+  <span>/</span>
+  <span style="color:var(--text);font-weight:600;">{{ project.name }}</span>
+</nav>
+
+<!-- Project Header Banner -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-between align-center flex-wrap gap-3">
+      <div style="flex:1;min-width:280px;">
+        <div class="d-flex align-center gap-2 mb-2 flex-wrap">
+          <h2 style="font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-0.02em;">
+            {{ project.name }}
+          </h2>
+          <span class="badge badge-{{ project.status }}">{{ project.status.replace('_',' ') }}</span>
+          {% if project.group %}
+            <a href="{{ url_for('groups.detail', group_id=project.group_id) }}" class="badge badge-todo">
+              👥 {{ project.group.name }}
+            </a>
+          {% else %}
+            <span class="badge badge-todo">👤 Personal</span>
+          {% endif %}
+        </div>
+
+        {% if project.description %}
+          <p style="color:var(--text-muted);font-size:.92rem;max-width:750px;margin-bottom:.75rem;">
+            {{ project.description }}
+          </p>
+        {% endif %}
+
+        <!-- Quick External Links -->
+        <div class="d-flex align-center gap-2 flex-wrap">
+          {% if project.github_repo %}
+            <a href="{{ project.github_repo }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary">
+              🐙 GitHub Repository ↗
+            </a>
+          {% endif %}
+          {% if project.live_demo_url %}
+            <a href="{{ project.live_demo_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary">
+              🌐 Live Demo ↗
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Progress Radial & Action Buttons -->
+      <div class="d-flex align-center gap-4">
+        <div style="position:relative;width:86px;height:86px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="progressChart"></canvas>
+          <div style="position:absolute;font-size:.9rem;font-weight:800;color:var(--text);" id="project-progress-text">
+            {{ progress }}%
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          {% if current_user.is_admin or project.owner_id == current_user.id %}
+            <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">
+              ＋ Add Task
+            </a>
+            <div class="d-flex gap-2">
+              <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-secondary btn-sm">
+                ✏️ Edit
+              </a>
+              <form id="delete-project-form" method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="openConfirmModal('delete-project-form','Permanently delete this project, all tasks, and attachments?')">
+                  🗑
+                </button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabbed Project Hub -->
+<div class="tabbed-container">
+  <div class="tabs-nav">
+    <button type="button" class="tab-btn active" data-tab="tab-kanban">
+      📊 Kanban Board ({{ tasks | length }})
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-table">
+      📋 Tasks List
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-milestones">
+      🏁 Milestones ({{ milestones | length }})
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-files">
+      📎 Files & Deliverables ({{ attachments | length }})
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-discussions">
+      💬 Discussions ({{ project_comments | length }})
+    </button>
+  </div>
+
+  <!-- TAB 1: INTERACTIVE KANBAN BOARD -->
+  <div class="tab-pane active" id="tab-kanban">
+    <div class="kanban-wrapper">
+      <div class="kanban-board">
+
+        <!-- Column: To Do -->
+        <div class="kanban-col" data-status="todo">
+          <div class="kanban-col-header">
+            <div class="kanban-col-title">
+              <span>📋 To Do</span>
+              <span class="kanban-count-pill">{{ todo_tasks | length }}</span>
+            </div>
+            {% if current_user.is_admin or project.owner_id == current_user.id %}
+            <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-ghost btn-sm" title="Add task">+</a>
+            {% endif %}
+          </div>
+          <div class="kanban-card-list">
+            {% for t in todo_tasks %}
+              {% include "projects/_kanban_card.html" %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Column: In Progress -->
+        <div class="kanban-col" data-status="in_progress">
+          <div class="kanban-col-header">
+            <div class="kanban-col-title">
+              <span>⚡ In Progress</span>
+              <span class="kanban-count-pill">{{ inprogress_tasks | length }}</span>
+            </div>
+          </div>
+          <div class="kanban-card-list">
+            {% for t in inprogress_tasks %}
+              {% include "projects/_kanban_card.html" %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Column: Done -->
+        <div class="kanban-col" data-status="done">
+          <div class="kanban-col-header">
+            <div class="kanban-col-title">
+              <span>✅ Completed</span>
+              <span class="kanban-count-pill">{{ done_tasks | length }}</span>
+            </div>
+          </div>
+          <div class="kanban-card-list">
+            {% for t in done_tasks %}
+              {% include "projects/_kanban_card.html" %}
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: TASKS LIST TABLE -->
+  <div class="tab-pane" id="tab-table">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Project Tasks</span>
+        <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">＋ New Task</a>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Assignee</th>
+              <th>Due Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tasks %}
+            <tr {% if t.is_overdue %}style="background:rgba(244,63,94,0.06);"{% endif %}>
+              <td>
+                <a href="{{ url_for('tasks.task_detail', task_id=t.id) }}" style="font-weight:600;">
+                  {{ t.title }}
+                </a>
+                {% if t.tags %}
+                  <div style="margin-top:.2rem;">
+                    {% for tag in t.get_tags_list() %}
+                      <span class="tag-chip">#{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </td>
+              <td><span class="badge badge-priority badge-{{ t.priority }}">{{ t.priority }}</span></td>
+              <td><span class="badge badge-{{ t.status }}">{{ t.status.replace('_',' ') }}</span></td>
+              <td>
+                {% if t.assignee %}
+                  <a href="{{ url_for('users.profile', user_id=t.assignee_id) }}">{{ t.assignee.name }}</a>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-small">
+                {% if t.due_date %}
+                  <span {% if t.is_overdue %}style="color:var(--danger);font-weight:700;"{% endif %}>{{ t.due_date }}</span>
+                  {% if t.is_overdue %}<span class="badge badge-overdue" style="margin-left:.3rem;">Overdue</span>{% endif %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td style="text-align:right;">
+                <a href="{{ url_for('tasks.task_detail', task_id=t.id) }}" class="btn btn-sm btn-ghost">View</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">
+                No tasks created yet.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: MILESTONES ROADMAP -->
+  <div class="tab-pane" id="tab-milestones">
+    <div class="grid-2" style="align-items:start;">
+      <!-- Milestones List -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🏁 Project Roadmap & Milestones</span>
+        </div>
+        <div class="card-body">
+          {% if milestones %}
+            <div class="timeline">
+              {% for m in milestones %}
+              <div class="timeline-item {% if m.is_completed %}completed{% endif %}">
+                <div class="timeline-dot"></div>
+                <div class="d-flex justify-between align-center flex-wrap gap-2">
+                  <div style="flex:1;">
+                    <span style="font-weight:700;font-size:1rem;{% if m.is_completed %}text-decoration:line-through;color:var(--text-muted);{% endif %}">
+                      {{ m.title }}
+                    </span>
+                    {% if m.due_date %}
+                      <div class="text-muted text-small">📅 Target: {{ m.due_date }}</div>
+                    {% endif %}
+                    {% if m.description %}
+                      <p class="text-muted text-small mt-2">{{ m.description }}</p>
+                    {% endif %}
+                  </div>
+                  <div class="d-flex align-center gap-2">
+                    <form method="POST" action="{{ url_for('projects.toggle_milestone', project_id=project.id, milestone_id=m.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                      <button class="btn btn-sm {% if m.is_completed %}btn-secondary{% else %}btn-primary{% endif %}">
+                        {% if m.is_completed %}✓ Done{% else %}Mark Done{% endif %}
+                      </button>
+                    </form>
+                    {% if current_user.is_admin or project.owner_id == current_user.id %}
+                    <form method="POST" action="{{ url_for('projects.delete_milestone', project_id=project.id, milestone_id=m.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                      <button class="btn btn-sm btn-ghost" title="Delete milestone">✕</button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+              No milestones defined yet. Break down the project into key goals!
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Add Milestone Form -->
+      {% if current_user.is_admin or project.owner_id == current_user.id %}
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">＋ Add New Milestone</span>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('projects.add_milestone', project_id=project.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="form-group">
+              <label class="form-label">Milestone Title *</label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. Phase 1: Prototype Completion" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Completion Date</label>
+              <input type="date" name="due_date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description (Optional)</label>
+              <textarea name="description" class="form-control" placeholder="Key deliverables or acceptance criteria..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Create Milestone</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- TAB 4: FILES & DELIVERABLES -->
+  <div class="tab-pane" id="tab-files">
+    <div class="grid-2" style="align-items:start;">
+      <!-- Attachments list -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📎 Deliverables & Files</span>
+          <span class="text-small text-muted">{{ attachments | length }} files</span>
+        </div>
+        <div class="card-body">
+          {% if attachments %}
+            <div style="display:flex;flex-direction:column;gap:.75rem;">
+              {% for att in attachments %}
+              <div class="d-flex align-center justify-between"
+                   style="padding:.75rem 1rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);">
+                <div class="d-flex align-center gap-3" style="min-width:0;">
+                  <span style="font-size:1.4rem;">📄</span>
+                  <div style="min-width:0;">
+                    <div style="font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                      {{ att.original_name }}
+                    </div>
+                    <div class="text-muted text-small">
+                      {{ att.formatted_size }} · by {{ att.uploader.name }} · {{ att.created_at.strftime('%b %d, %Y') }}
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex align-center gap-2">
+                  <a href="{{ url_for('static', filename='uploads/attachments/' + att.filename) }}" download class="btn btn-sm btn-secondary">
+                    ⬇ Download
+                  </a>
+                  {% if current_user.is_admin or att.uploader_id == current_user.id or project.owner_id == current_user.id %}
+                  <form method="POST" action="{{ url_for('tasks.delete_attachment', attachment_id=att.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button class="btn btn-sm btn-ghost" title="Delete file">✕</button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+              No files or deliverables attached to this project yet.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Upload box -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⬆️ Upload Deliverable / Report</span>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('projects.upload_project_attachment', project_id=project.id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="form-group">
+              <label class="form-label">Select File (PDF, DOCX, ZIP, PPTX, Images, Code up to 16MB)</label>
+              <input type="file" name="attachment" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Upload File</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: DISCUSSIONS -->
+  <div class="tab-pane" id="tab-discussions">
+    <div class="card" style="max-width:850px;margin:0 auto;">
+      <div class="card-header">
+        <span class="card-title">💬 Project Discussions & Mentor Feedback</span>
+      </div>
+      <div class="card-body">
+        <!-- New Comment Form -->
+        <form method="POST" action="{{ url_for('comments.add_project_comment', project_id=project.id) }}" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="form-group">
+            <label class="form-label">Add a message or guidance note</label>
+            <textarea name="text" class="form-control" placeholder="Share updates, feedback, or meeting notes..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+        </form>
+
+        <!-- Comments Feed -->
+        {% if project_comments %}
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            {% for c in project_comments %}
+            <div style="padding:1rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);">
+              <div class="d-flex align-center justify-between mb-2">
+                <div class="d-flex align-center gap-2">
+                  <div class="user-avatar" style="width:28px;height:28px;font-size:.75rem;">
+                    {{ c.author.initials }}
+                  </div>
+                  <span style="font-weight:700;font-size:.9rem;">{{ c.author.name }}</span>
+                  <span class="badge badge-todo" style="font-size:.7rem;">{{ c.author.role }}</span>
+                </div>
+                <span class="text-muted text-small">{{ c.created_at.strftime('%b %d, %H:%M') }}</span>
+              </div>
+              <p style="font-size:.92rem;color:var(--text);white-space:pre-wrap;">{{ c.text }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+            No comments yet. Start the conversation with your team!
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
