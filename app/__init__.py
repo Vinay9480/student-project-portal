@@ -13,12 +13,18 @@ def create_app(config_name: str = "default") -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
 
-    # Ensure instance folder exists
-    os.makedirs(app.instance_path, exist_ok=True)
-
-    # Ensure group image upload and attachments folder exist
-    os.makedirs(app.config.get("UPLOAD_FOLDER", ""), exist_ok=True)
-    os.makedirs(app.config.get("ATTACHMENTS_FOLDER", ""), exist_ok=True)
+    # Ensure folders exist safely (Vercel filesystem is read-only except /tmp)
+    try:
+        if not os.environ.get("VERCEL"):
+            os.makedirs(app.instance_path, exist_ok=True)
+        upload_folder = app.config.get("UPLOAD_FOLDER")
+        if upload_folder:
+            os.makedirs(upload_folder, exist_ok=True)
+        attachments_folder = app.config.get("ATTACHMENTS_FOLDER")
+        if attachments_folder:
+            os.makedirs(attachments_folder, exist_ok=True)
+    except OSError:
+        pass
 
     # Initialise extensions
     db.init_app(app)
@@ -62,10 +68,13 @@ def create_app(config_name: str = "default") -> Flask:
     from app.errors import register_error_handlers
     register_error_handlers(app)
 
-    # Create tables on first run and auto-upgrade sqlite columns
+    # Create tables on first run and auto-upgrade sqlite columns safely
     with app.app_context():
-        db.create_all()
-        _upgrade_sqlite_schema(app, db)
+        try:
+            db.create_all()
+            _upgrade_sqlite_schema(app, db)
+        except Exception:
+            pass
 
     return app
 

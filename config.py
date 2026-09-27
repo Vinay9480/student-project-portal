@@ -13,6 +13,9 @@ def get_database_uri():
         if uri.startswith("postgres://"):
             uri = uri.replace("postgres://", "postgresql://", 1)
         return uri
+    # In Vercel serverless environment, filesystem is read-only except /tmp
+    if os.environ.get("VERCEL"):
+        return "sqlite:////tmp/student_portal.db"
     return f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'student_portal.db')}"
 
 
@@ -21,9 +24,16 @@ class Config:
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 2 * 1024 * 1024))  # 2 MB
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, "app", "static", "img", "groups")
+
+    # Folder paths: use /tmp on Vercel to prevent read-only filesystem crash
+    if os.environ.get("VERCEL"):
+        UPLOAD_FOLDER = "/tmp/uploads/groups"
+        ATTACHMENTS_FOLDER = "/tmp/uploads/attachments"
+    else:
+        UPLOAD_FOLDER = os.path.join(BASE_DIR, "app", "static", "img", "groups")
+        ATTACHMENTS_FOLDER = os.path.join(BASE_DIR, "app", "static", "uploads", "attachments")
+
     ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
-    ATTACHMENTS_FOLDER = os.path.join(BASE_DIR, "app", "static", "uploads", "attachments")
     ALLOWED_ATTACHMENT_EXTENSIONS = {
         "pdf", "docx", "doc", "txt", "zip", "tar", "gz", "png", "jpg", "jpeg", "csv", "xlsx", "pptx", "py", "json", "md"
     }
